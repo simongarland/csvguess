@@ -1,5 +1,6 @@
 / guess a reasonable loadstring for a csv file (kdb+ 2.4 or greater)
-"kdb+csvguess 0.38 2007.10.20"
+"kdb+csvguess 0.39 2007.12.01"
+/ 2007.12.01 add POSTSAVEALL for SAVE/BULKSAVE - allow disk `p# etc 
 / 2007.10.20 catch 0W etc when cancast_ing, don't try and create E  
 / 2007.10.17 cleanup D+M support for 2.4, add -z1
 / 2007.09.13 use .Q.res 
@@ -42,6 +43,7 @@ SAVEPTN:` / individual partition, 2006.12.25 frinstance; ` => none
 PRESAVEEACH:{x} / function to be run before each incremental save (delete date field?) 
 POSTLOADEACH:{x} / function to be run after each incremental load from file
 POSTLOADALL:{x} / function to be run after complete load from file (LOAD/BULKLOAD only, not BULKSAVE as never all data in one place)
+POSTSAVEALL:{x} / function to be run after all saved, to set `p# on `sym for example: {@[x;`sym;`p#]} or sort by sym {`sym xasc x}
 @[.:;"\\l csvguess.custom.q";::]; / save your custom settings in csvguess.custom.q to override those set above
 
 if[0=hcount LOADFILE;-2"empty file: ",first .Q.x;exit 1]
@@ -120,7 +122,8 @@ info:select c,ci,t,maybe,empty,res,j10,j12,ipa,mw,mdot,rule,gr,ndv,dchar from in
 k)fs2:{[f;s]((-7!s)>){[f;s;x]i:1+last@&0xa=r:1:(s;x;CHUNKSIZE);f@`\:i#r;x+i}[f;s]/0j} / .Q.fs with bigger chunks
 
 SAVENAME:LOADNAME:`${x where((first x)in .Q.a),1_ x in .Q.an}lower first"."vs last"/"vs 1_string LOADFILE
-SAVE:{(` sv((`. `SAVEDB`SAVEPTN`SAVENAME)except`),`)set PRESAVEEACH .Q.en[`. `SAVEDB] x}
+SAVEPATH:{` sv((`. `SAVEDB`SAVEPTN`SAVENAME)except`),`}
+SAVE:{(r:SAVEPATH[])set PRESAVEEACH .Q.en[`. `SAVEDB] x;POSTSAVEALL r;r}
 DATA:() / delete from`DATA
 
 refresh:{ / rebuild globals from <info>
@@ -142,7 +145,7 @@ LOAD:{[file] POSTLOADALL POSTLOADEACH$[NOHEADER;flip LOADHDRS!LOADDEFN[]0:;LOADH
 / (10#DATA):LOAD10 LOADFILE / load just the first 10 rows, convenient when debugging column types
 LOAD10:{[file] LOAD(file;0;1+last(11-NOHEADER)#where 0xa=read1(file;0;20000))}
 BULKLOAD:{[file] fs2[{`DATA insert POSTLOADEACH$[NOHEADER or count DATA;flip LOADHDRS!(LOADFMTS;DELIM)0:x;LOADHDRS xcol LOADDEFN[]0: x]}file];count DATA::POSTLOADALL DATA}
-BULKSAVE:{[file] .tmp.bsc:0;fs2[{.[` sv((`. `SAVEDB`SAVEPTN`SAVENAME)except`),`;();,;]PRESAVEEACH t:.Q.en[`. `SAVEDB]POSTLOADEACH$[NOHEADER or .tmp.bsc;flip LOADHDRS!(LOADFMTS;DELIM)0:x;LOADHDRS xcol LOADDEFN[]0: x];.tmp.bsc+:count t}]file;.tmp.bsc}
+BULKSAVE:{[file] .tmp.bsc:0;fs2[{.[SAVEPATH[];();,;]PRESAVEEACH t:.Q.en[`. `SAVEDB]POSTLOADEACH$[NOHEADER or .tmp.bsc;flip LOADHDRS!(LOADFMTS;DELIM)0:x;LOADHDRS xcol LOADDEFN[]0: x];.tmp.bsc+:count t}]file;POSTSAVEALL SAVEPATH[];.tmp.bsc}
 JUSTSYM:{[file] .tmp.jsc:0;fs2[{.tmp.jsc+:count .Q.en[`. `SAVEDB]POSTLOADEACH$[NOHEADER or .tmp.jsc;flip JUSTSYMHDRS!(JUSTSYMFMTS;DELIM)0:x;JUSTSYMHDRS xcol JUSTSYMDEFN[]0: x]}]file;.tmp.jsc}
 
 / create a standalone load script - savescript[]
@@ -174,7 +177,8 @@ savescript:{refresh[];f:`$":",(string LOADNAME),".load.q";f 1:"";hs:neg hopen f;
 	hs"\\z ",(string system"z")," / D date format 0 => mm/dd/yyyy or 1 => dd/mm/yyyy (yyyy.mm.dd is always ok)";
 	hs"LOADNAME:",-3!LOADNAME;hs"SAVENAME:",-3!SAVENAME;hs"LOADFMTS:\"",LOADFMTS,"\"";hs"LOADHDRS:",raze"`",'string LOADHDRS;
 	hs"if[`savename in key o;if[count first o[`savename];SAVENAME:`$first o[`savename]]]";
-	hs"LOADDEFN:",-3!LOADDEFN;hs"POSTLOADEACH:",-3!POSTLOADEACH;hs"POSTLOADALL:",-3!POSTLOADALL;hs"LOAD:",-3!LOAD;hs"LOAD10:",(-3!LOAD10)," / just load first 10 records";
+	hs"SAVEPATH:",-3!SAVEPATH;
+	hs"LOADDEFN:",-3!LOADDEFN;hs"POSTLOADEACH:",-3!POSTLOADEACH;hs"POSTLOADALL:",-3!POSTLOADALL;hs"POSTSAVEALL:",-3!POSTSAVEALL;hs"LOAD:",-3!LOAD;hs"LOAD10:",(-3!LOAD10)," / just load first 10 records";
 	hs"JUSTSYMFMTS:\"",JUSTSYMFMTS,"\"";hs"JUSTSYMHDRS:",$[0=count JUSTSYMHDRS;"0#`";raze"`",'string JUSTSYMHDRS];
 	hs"JUSTSYMDEFN:",-3!JUSTSYMDEFN;
 	hs"CHUNKSIZE:",string CHUNKSIZE;hs"DATA:()";
