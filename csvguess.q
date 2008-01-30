@@ -42,12 +42,15 @@ SAVEDB:`:csvdb / database top level, where things like `:sym live
 SAVEPTN:` / individual partition, 2006.12.25 frinstance; ` => none
 PRESAVEEACH:{x} / function to be run before each incremental save (delete date field?) 
 POSTLOADEACH:{x} / function to be run after each incremental load from file
+/ POSTLOADALL:{update `p#sym from`sym`time xasc x}
 POSTLOADALL:{x} / function to be run after complete load from file (LOAD/BULKLOAD only, not BULKSAVE as never all data in one place)
+/ POSTSAVEALL:{@[`sym`time xasc x;`sym;`p#]}
 POSTSAVEALL:{x} / function to be run after all saved, to set `p# on `sym for example: {@[x;`sym;`p#]} or sort by sym {`sym xasc x}
 @[.:;"\\l csvguess.custom.q";::]; / save your custom settings in csvguess.custom.q to override those set above
 
 if[0=hcount LOADFILE;-2"empty file: ",first .Q.x;exit 1]
 sample:last head:read0(LOADFILE;0;1+last where 0xa=read1(LOADFILE;0;WIDTHHDR))
+if[not DELIM in first head;-2"delimiter \"",DELIM,"\" not found in first row";exit 1]
 readwidth:floor(10+READLINES)*WIDTHHDR%count head 
 nas:count as:((1+sum DELIM=first head)#"S";enlist DELIM)0:(LOADFILE;0;1+last where 0xa=read1(LOADFILE;0;readwidth))
 if[0=nas;-2"empty file: ",first .Q.x;exit 1]
@@ -218,3 +221,4 @@ forceS:{update t:"S" from`info where t="*"} / no string cols
 \
 first LOAD10 FILE
 select from info where maybe
+allfiles:{x where(lower x)like"*.csv"}key`:.
