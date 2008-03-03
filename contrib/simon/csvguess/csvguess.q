@@ -1,5 +1,6 @@
 / guess a reasonable loadstring for a csv file (kdb+ 2.4 or greater)
-"kdb+csvguess 0.39 2007.12.01"
+"kdb+csvguess 0.40 2008.03.03"
+/ 2008.03.03 describe -savedb etc in savescript 
 / 2007.12.01 add POSTSAVEALL for SAVE/BULKSAVE - allow disk `p# etc 
 / 2007.10.20 catch 0W etc when cancast_ing, don't try and create E  
 / 2007.10.17 cleanup D+M support for 2.4, add -z1
@@ -31,7 +32,7 @@ ZAPHDRS:ZAPHDRS and not NOHEADER
 SAVESCRIPT:any`savescript`ss in key o
 SAVEINFO:any`saveinfo`si in key o
 if[any`zeuro`zeur`z1 in key o;system"z 1"]
-EXIT:`exit in key o
+EXIT:`exit in key o                             
 SYMMAXWIDTH:30 / max symbol width before we just give up and keep as * string
 SYMMAXGR:10 / max symbol granularity% before we give up and keep as a * string
 WIDTHHDR:25000 / initial width read to look for header record
@@ -169,6 +170,8 @@ savescript:{refresh[];f:`$":",(string LOADNAME),".load.q";f 1:"";hs:neg hopen f;
 	hs"/ q ",(string LOADNAME),".load.q FILE [-bl|bulkload] [-bs|bulksave] [-js|justsym] [-exit] [-savedb SAVEDB] [-saveptn SAVEPTN] [-savename SAVENAME] ";
 	hs"/ q ",(string LOADNAME),".load.q FILE";
 	hs"/ q ",(string LOADNAME),".load.q";
+	hs"/ q ",(string LOADNAME),".load.q -savedb DB -saveptn PTN -savename NAME / to save to `:DB/PTN/NAME/";
+	hs"/ q ",(string LOADNAME),".load.q -savedb taq -saveptn 2008.04.01 -savename trade / to save to `:taq/2008.04.01/trade/";
 	hs"/ q ",(string LOADNAME),".load.q -help";
 	hs"FILE:LOADFILE:`$\"",(string LOADFILE),"\"";
 	hs"o:.Q.opt .z.x;if[count .Q.x;FILE:hsym`${x[where\"\\\\\"=x]:\"/\";x}first .Q.x]";
