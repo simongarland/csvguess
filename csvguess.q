@@ -135,7 +135,7 @@ refresh:{ / rebuild globals from <info>
 	JUSTSYMFMTS::{x[where not x="S"]:" ";x}LOADFMTS;
 	LOADHDRS::exec c from`ci xasc select ci,c from info where not t=" ";
 	JUSTSYMHDRS::LOADHDRS where LOADFMTS="S";}
-	
+
 status:{ / loadability..
 	-1(string`second$.z.t)," FILE:`",(string FILE),"; SAVEDB:`",(string SAVEDB),"; SAVEPTN:`",(string SAVEPTN),"; SAVENAME:`",(string SAVENAME),"; \\z ",(string system"z"),"; DELIM:\"",DELIM,"\"";
 	-1(string`second$.z.t)," ",(string count info)," column(s); ",(string exec count i from info where maybe)," flagged maybe; ",(string exec count i from info where empty)," empty; ",(string exec count i from info where res)," with reserved names";}
@@ -165,17 +165,19 @@ JUSTSYM:{[file] .tmp.jsc:0;fs2[{.tmp.jsc+:count .Q.en[`. `SAVEDB]POSTLOADEACH$[N
 / q xxx.q FILENAME -bs -savedb foo -saveptn 2006.12.25 / to bulksave FILENAME to directory foo in the 2006.12.25 date partition
 / q xxx.q FILENAME -bs -savedb foo -saveptn 2006.12.25 -savename goo / to bulksave FILENAME to directory foo in the 2006.12.25 date partition as table goo
 / q xxx.q ... -exit / exit on completion of commands (only makes sense with -bs and -js)
+/ q xxx.q .. -chunksize NN / non-default read chunksize - default is 25 
 savescript:{refresh[];f:`$":",(string LOADNAME),".load.q";f 1:"";hs:neg hopen f;
 	hs"/ ",(string .z.z)," ",(string .z.h)," ",(string .z.u);
-	hs"/ q ",(string LOADNAME),".load.q FILE [-bl|bulkload] [-bs|bulksave] [-js|justsym] [-exit] [-savedb SAVEDB] [-saveptn SAVEPTN] [-savename SAVENAME] ";
+	hs"/ q ",(string LOADNAME),".load.q FILE [-bl|bulkload] [-bs|bulksave] [-js|justsym] [-exit] [-savedb SAVEDB] [-saveptn SAVEPTN] [-savename SAVENAME] [-chunksize NNN (in MB)] ";
 	hs"/ q ",(string LOADNAME),".load.q FILE";
 	hs"/ q ",(string LOADNAME),".load.q";
+	hs"/ q ",(string LOADNAME),".load.q -chunksize 11 / test to find optimum for your file";
 	hs"/ q ",(string LOADNAME),".load.q -savedb DB -saveptn PTN -savename NAME / to save to `:DB/PTN/NAME/";
 	hs"/ q ",(string LOADNAME),".load.q -savedb taq -saveptn 2008.04.01 -savename trade / to save to `:taq/2008.04.01/trade/";
 	hs"/ q ",(string LOADNAME),".load.q -help";
 	hs"FILE:LOADFILE:`$\"",(string LOADFILE),"\"";
 	hs"o:.Q.opt .z.x;if[count .Q.x;FILE:hsym`${x[where\"\\\\\"=x]:\"/\";x}first .Q.x]";
-	hs"if[`help in key o;-1\"usage: q ",(string LOADNAME),".load.q [FILE(default",(string LOADFILE),")] [-help] [-bl|bulkload] [-bs|bulksave] [-js|justsym] [-savedb SAVEDB] [-saveptn SAVEPTN] [-savename SAVENAME] [-exit]\\n\";exit 1]";
+	hs"if[`help in key o;-1\"usage: q ",(string LOADNAME),".load.q [FILE(default",(string LOADFILE),")] [-help] [-bl|bulkload] [-bs|bulksave] [-js|justsym] [-savedb SAVEDB] [-saveptn SAVEPTN] [-savename SAVENAME] [-chunksize NNN (in MB)] [-exit]\\n\";exit 1]";
 	hs"SAVEDB:",-3!SAVEDB;hs"SAVEPTN:",-3!SAVEPTN;
 	hs"if[`savedb in key o;if[count first o[`savedb];SAVEDB:hsym`$first o[`savedb]]]";
 	hs"if[`saveptn in key o;if[count first o[`saveptn];SAVEPTN:`$first o[`saveptn]]]";
@@ -188,11 +190,12 @@ savescript:{refresh[];f:`$":",(string LOADNAME),".load.q";f 1:"";hs:neg hopen f;
 	hs"JUSTSYMFMTS:\"",JUSTSYMFMTS,"\"";hs"JUSTSYMHDRS:",$[0=count JUSTSYMHDRS;"0#`";raze"`",'string JUSTSYMHDRS];
 	hs"JUSTSYMDEFN:",-3!JUSTSYMDEFN;
 	hs"CHUNKSIZE:",string CHUNKSIZE;hs"DATA:()";
+	hs"if[`chunksize in key o;if[count first o[`chunksize];CHUNKSIZE:floor 1e6*1|\"I\"$first o[`chunksize]]]";
 	hs"k)fs2:",2_ last value fs2;
 	hs"BULKLOAD:",-3!BULKLOAD;hs"PRESAVEEACH:",-3!PRESAVEEACH;hs"SAVE:",-3!SAVE;hs"BULKSAVE:",-3!BULKSAVE;hs"JUSTSYM:",-3!JUSTSYM;
-	hs"if[any`js`justsym in key o;-1(string`second$.z.t),\" saving `sym for <\",(1_string FILE),\"> to directory \",1_string SAVEDB;.tmp.st:.z.t;.tmp.rc:JUSTSYM FILE;.tmp.et:.z.t;.tmp.fs:hcount FILE;-1(string`second$.z.t),\" done (\",(string .tmp.rc),\" records; \",(string floor .tmp.rc%1e-3*`int$.tmp.et-.tmp.st),\" records/sec; \",(string floor 0.5+.tmp.fs%1e3*`int$.tmp.et-.tmp.st),\" MB/sec)\"]";
-	hs"if[any`bs`bulksave in key o;-1(string`second$.z.t),\" saving <\",(1_string FILE),\"> to directory \",1_string` sv(SAVEDB,SAVEPTN,SAVENAME)except`;.tmp.st:.z.t;.tmp.rc:BULKSAVE FILE;.tmp.et:.z.t;.tmp.fs:hcount FILE;-1(string`second$.z.t),\" done (\",(string .tmp.rc),\" records; \",(string floor .tmp.rc%1e-3*`int$.tmp.et-.tmp.st),\" records/sec; \",(string floor 0.5+.tmp.fs%1e3*`int$.tmp.et-.tmp.st),\" MB/sec)\"]";
-	hs"if[any`bl`bulkload in key o;-1(string`second$.z.t),\" loading <\",(1_string FILE),\"> to variable DATA\";.tmp.st:.z.t;BULKLOAD FILE;.tmp.et:.z.t;.tmp.rc:count DATA;.tmp.fs:hcount FILE;-1(string`second$.z.t),\" done (\",(string .tmp.rc),\" records; \",(string floor .tmp.rc%1e-3*`int$.tmp.et-.tmp.st),\" records/sec; \",(string floor 0.5+.tmp.fs%1e3*`int$.tmp.et-.tmp.st),\" MB/sec)\"]";
+	hs"if[any`js`justsym in key o;-1(string`second$.z.t),\" saving `sym for <\",(1_string FILE),\"> to directory \",1_string SAVEDB;.tmp.st:.z.t;.tmp.rc:JUSTSYM FILE;.tmp.et:.z.t;.tmp.fs:hcount FILE;-1(string`second$.z.t),\" done (\",(string .tmp.rc),\" records; \",(string floor .tmp.rc%1e-3*`int$.tmp.et-.tmp.st),\" records/sec; \",(string floor 0.5+.tmp.fs%1e3*`int$.tmp.et-.tmp.st),\" MB/sec; CHUNKSIZE \",(string floor 0.5+CHUNKSIZE%1e6),\")\"]";
+	hs"if[any`bs`bulksave in key o;-1(string`second$.z.t),\" saving <\",(1_string FILE),\"> to directory \",1_string` sv(SAVEDB,SAVEPTN,SAVENAME)except`;.tmp.st:.z.t;.tmp.rc:BULKSAVE FILE;.tmp.et:.z.t;.tmp.fs:hcount FILE;-1(string`second$.z.t),\" done (\",(string .tmp.rc),\" records; \",(string floor .tmp.rc%1e-3*`int$.tmp.et-.tmp.st),\" records/sec; \",(string floor 0.5+.tmp.fs%1e3*`int$.tmp.et-.tmp.st),\" MB/sec; CHUNKSIZE \",(string floor 0.5+CHUNKSIZE%1e6),\")\"]";
+	hs"if[any`bl`bulkload in key o;-1(string`second$.z.t),\" loading <\",(1_string FILE),\"> to variable DATA\";.tmp.st:.z.t;BULKLOAD FILE;.tmp.et:.z.t;.tmp.rc:count DATA;.tmp.fs:hcount FILE;-1(string`second$.z.t),\" done (\",(string .tmp.rc),\" records; \",(string floor .tmp.rc%1e-3*`int$.tmp.et-.tmp.st),\" records/sec; \",(string floor 0.5+.tmp.fs%1e3*`int$.tmp.et-.tmp.st),\" MB/sec; CHUNKSIZE \",(string floor 0.5+CHUNKSIZE%1e6),\")\"]";
 	hs"if[`exit in key o;exit 0]";
 	hs"/ DATA:(); BULKLOAD LOADFILE / incremental load all to DATA";
 	hs"/ BULKSAVE LOADFILE / incremental save all to SAVEDB[/SAVEPTN]";
