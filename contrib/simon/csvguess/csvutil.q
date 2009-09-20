@@ -1,5 +1,5 @@
 / utilities to quickly load a csv file - for more exhaustive analysis of the csv contents see csvguess.q
-/ 2009.09.19 - updated to match latest csvguess.q 
+/ 2009.09.20 - updated to match latest csvguess.q 
 
 / .csv.colhdrs[file] - return a list of colhdrs from file
 / info:.csv.info[file] - return a table of information about the file
@@ -26,8 +26,10 @@ SYMMAXWIDTH:11 / character columns narrower than this are stored as symbols
 SYMMAXGR:10 / max symbol granularity% before we give up and keep as a * string
 FORCECHARWIDTH:30 / every field (of any type) with values this wide or more is forced to character "*"
 DISCARDEMPTY:0b / completely ignore empty columns if true else set them to "C"
+CHUNKSIZE:50000000 / used in fs2 (modified .Q.fs)
 
 k)nameltrim:{$[~@x;.z.s'x;~(*x)in aA:.Q.a,.Q.A;(+/&\~x in aA)_x;x]}
+k)fs2:{[f;s]((-7!s)>){[f;s;x]i:1+last@&0xa=r:1:(s;x;CHUNKSIZE);f@`\:i#r;x+i}[f;s]/0j}
 cleanhdrs:{{$[ZAPHDRS;lower x except"_";x]}x where x in DELIM,.Q.an}
 cancast:{nw:x$"";if[not x in"BXCS";nw:(min 0#;max 0#;::)@\:nw];$[not any nw in x$(11&count y)#y;$[11<count y;not any nw in x$y;1b];0b]}
 
@@ -96,6 +98,6 @@ bulkload:{[file;info]
 	if[not`DATA in system"v";'`DATA.not.defined];
 	if[count DATA;'`DATA.not.empty];
 	loadhdrs:exec c from info where not t=" ";loadfmts:exec t from info;
-	.Q.fs[{[file;loadhdrs;loadfmts] `DATA insert $[count DATA;flip loadhdrs!(loadfmts;.csv.DELIM)0:file;loadhdrs xcol(loadfmts;enlist .csv.DELIM)0:file]}[file;loadhdrs;loadfmts]];
+	.csv.fs2[{[file;loadhdrs;loadfmts] `DATA insert $[count DATA;flip loadhdrs!(loadfmts;.csv.DELIM)0:file;loadhdrs xcol(loadfmts;enlist .csv.DELIM)0:file]}[file;loadhdrs;loadfmts]];
 	count DATA}
 @[.:;"\\l csvutil.custom.q";::]; / save your custom settings in csvutil.custom.q to override those set at the beginning of the file 
