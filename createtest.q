@@ -1,6 +1,6 @@
 / create a test csv with most types 
 \P 0
-n:100
+n:1000
 test:([]typeb:n?0b;typeg:n?0Ng;typex:n?0x00;typeh:n?0h;typei:n?0i;typej:n?0j;typee:n?1234e;typef:n?1234567f;typec:n?" ";types:n?`7;typep:n?.z.p;typem:n?`month$.z.p;typed:n?`date$.z.p;typez:n?.z.z;typen:n?.z.n;typeu:n?`minute$.z.p;typev:n?`second$.z.p;typet:n?.z.t)
 save`:test.csv
 \\
