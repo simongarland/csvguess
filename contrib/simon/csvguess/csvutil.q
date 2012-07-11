@@ -1,4 +1,5 @@
 / utilities to quickly load a csv file - for more exhaustive analysis of the csv contents see csvguess.q
+/ 2012.07.11 - add GUID 
 / 2009.09.20 - updated to match latest csvguess.q 
 
 / .csv.colhdrs[file] - return a list of colhdrs from file
@@ -31,7 +32,7 @@ CHUNKSIZE:50000000 / used in fs2 (modified .Q.fs)
 k)nameltrim:{$[~@x;.z.s'x;~(*x)in aA:.Q.a,.Q.A;(+/&\~x in aA)_x;x]}
 k)fs2:{[f;s]((-7!s)>){[f;s;x]i:1+last@&0xa=r:1:(s;x;CHUNKSIZE);f@`\:i#r;x+i}[f;s]/0j}
 cleanhdrs:{{$[ZAPHDRS;lower x except"_";x]}x where x in DELIM,.Q.an}
-cancast:{nw:x$"";if[not x in"BXCS";nw:(min 0#;max 0#;::)@\:nw];$[not any nw in x$(11&count y)#y;$[11<count y;not any nw in x$y;1b];0b]}
+cancast:{nw:x$"";if[not x in"BXGCS";nw:(min 0#;max 0#;::)@\:nw];$[not any nw in x$(11&count y)#y;$[11<count y;not any nw in x$y;1b];0b]}
 
 read:{[file]data[file;info[file]]}  
 read10:{[file]data10[file;info[file]]}  
@@ -62,6 +63,7 @@ info0:{[file;onlycols]
 	info:update mdot:{max sum each"."=x}peach sdv from info where t="?",{"."in x}each dchar;
 	info:update t:"n",rule:40 from info where t="?",{any x in"0123456789"}each dchar; / vaguely numeric..
 	info:update t:"I",rule:50,ipa:1b from info where t="n",mw within 7 15,mdot=3,{all x in".0123456789"}each dchar,.csv.cancast["I"]peach sdv; / ip-address
+    if[.z.K>=3;info:update t:"G",rule:55 from info where t="*",mw=36,mdot=0,{all x like"*-????-????-????-*"}peach sdv,.csv.cancast["G"]peach sdv]; / GUID, v3.0 or later
 	info:update t:"J",rule:60 from info where t="n",mdot=0,{all x in"+-0123456789"}each dchar,.csv.cancast["J"]peach sdv;
 	info:update t:"I",rule:70 from info where t="J",mw<12,.csv.cancast["I"]peach sdv;
 	info:update t:"H",rule:80 from info where t="I",mw<7,.csv.cancast["H"]peach sdv;
