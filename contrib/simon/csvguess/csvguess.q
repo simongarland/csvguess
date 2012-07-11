@@ -1,5 +1,6 @@
 / guess a reasonable loadstring for a csv file (kdb+ 2.4 or greater)
-"kdb+csvguess 0.43 2009.09.19"
+"kdb+csvguess 0.44 2012.07.10"
+/ 2012.07.10 add GUID, track ALL checks per col
 / 2009.09.19 cleanup tests
 / 2009.09.15 add conservative checks for N&P (2.6) 
 / 2008.03.03 describe -savedb etc in savescript 
@@ -40,7 +41,7 @@ SYMMAXGR:10 / max symbol granularity% before we give up and keep as a * string
 WIDTHHDR:25000 / initial width read to look for header record
 READLINES:5555 / approximate number of records to check
 FORCECHARWIDTH:30 / width beyond which we just set a column to be text and finished 
-CHUNKSIZE:50000000 / chunksize read when bulk load/save - much larger than safe default in .Q.fs 
+CHUNKSIZE:4194000 / chunksize read when bulk load/save - much larger than safe default in .Q.fs 
 SAVEDB:`:csvdb / database top level, where things like `:sym live
 SAVEPTN:` / individual partition, 2006.12.25 frinstance; ` => none
 PRESAVEEACH:{x} / function to be run before each incremental save (delete date field?) 
@@ -59,7 +60,7 @@ readwidth:floor(10+READLINES)*WIDTHHDR%count head
 nas:count as:((1+sum DELIM=first head)#"S";enlist DELIM)0:(LOADFILE;0;1+last where 0xa=read1(LOADFILE;0;readwidth))
 if[0=nas;-2"empty file: ",first .Q.x;exit 1]
 
-cancast:{nw:x$"";if[not x in"BXCS";nw:(min 0#;max 0#;::)@\:nw];$[not any nw in x$(11&count y)#y;$[11<count y;not any nw in x$y;1b];0b]}
+cancast:{nw:x$"";if[not x in"BGXCS";nw:(min 0#;max 0#;::)@\:nw];$[not any nw in x$(11&count y)#y;$[11<count y;not any nw in x$y;1b];0b]}
 k)nameltrim:{$[~@x;.z.s'x;~(*x)in aA:.Q.a,.Q.A;(+/&\~x in aA)_x;x]}
 
 info:([]c:key flip as;v:value flip as);as:()
@@ -71,47 +72,49 @@ if[ZAPHDRS;info:update c:zh1 c from info]
 / check for reserved words used as colnames
 reserved:key`.q;reserved,:.Q.res;reserved,:`i
 info:update res:c in reserved from info
-info:update ci:i,t:"?",ipa:0b,mdot:0,mw:0,rule:0,gr:0,ndv:0,maybe:0b,empty:0b,j10:0b,j12:0b from info
+info:update ci:i,t:"?",ipa:0b,mdot:0,mw:0,gr:0,ndv:0,maybe:0b,empty:0b,j10:0b,j12:0b from info
 info:update ci:`s#ci from info
+info:update rules:(count info)#() from info
 info:update sdv:{string(distinct x)except`}peach v from info
 info:update ndv:count each sdv from info
 info:update gr:floor 0.5+100*ndv%nas,mw:{max count each x}peach sdv from info where 0<ndv
-/ rule:10 only in csvutil.q 
-info:update t:"*",rule:20 from info where mw>FORCECHARWIDTH / long values
-info:update t:"C "[DISCARDEMPTY],rule:30,empty:1b from info where t="?",mw=0 / empty columns
+/ rule 10 only in csvutil.q 
+info:update t:"*",(rules:rules,'20)from info where mw>FORCECHARWIDTH / long values
+info:update t:"C "[DISCARDEMPTY],(rules:rules,'30),empty:1b from info where t="?",mw=0 / empty columns
 info:update dchar:{asc distinct raze x}peach sdv from info where t="?"
 info:update mdot:{max sum each"."=x}peach sdv from info where t="?",{"."in x}each dchar
-info:update t:"n",rule:40 from info where t="?",{any x in"0123456789"}each dchar / vaguely numeric..
-info:update t:"I",rule:50,ipa:1b from info where t="n",mw within 7 15,mdot=3,{all x in".0123456789"}each dchar,cancast["I"]peach sdv / ip-address
-info:update t:"J",rule:60 from info where t="n",mdot=0,{all x in"+-0123456789"}each dchar,cancast["J"]peach sdv
-info:update t:"I",rule:70 from info where t="J",mw<12,cancast["I"]peach sdv
-info:update t:"H",rule:80 from info where t="I",mw<7,cancast["H"]peach sdv
-info:update t:"F",rule:90 from info where t="n",mdot<2,mw>1,cancast["F"]peach sdv
-info:update t:"E",rule:100,maybe:1b from info where t="F",mw<9
-info:update t:"M",rule:110,maybe:1b from info where t in"nIHEF",mdot<2,mw within 4 7,cancast["M"]peach sdv 
-info:update t:"D",rule:120,maybe:1b from info where t in"nI",mdot in 0 2,mw within 6 11,cancast["D"]peach sdv 
-info:update t:"V",rule:130,maybe:1b from info where t="I",mw in 5 6,7<count each dchar,{all x like"*[0-9][0-5][0-9][0-5][0-9]"}peach sdv,cancast["V"]peach sdv / 235959 12345        
-info:update t:"U",rule:140,maybe:1b from info where t="H",mw in 3 4,7<count each dchar,{all x like"*[0-9][0-5][0-9]"}peach sdv,cancast["U"]peach sdv /2359
-info:update t:"U",rule:150,maybe:0b from info where t="n",mw in 4 5,mdot=0,{all x like"*[0-9]:[0-5][0-9]"}peach sdv,cancast["U"]peach sdv
-info:update t:"T",rule:160,maybe:0b from info where t="n",mw within 7 12,mdot<2,{all x like"*[0-9]:[0-5][0-9]:[0-5][0-9]*"}peach sdv,cancast["T"]peach sdv
-info:update t:"V",rule:170,maybe:0b from info where t="T",mw in 7 8,mdot=0,cancast["V"]peach sdv
-info:update t:"T",rule:180,maybe:1b from info where t in"EF",mw within 7 10,mdot=1,{all x like"*[0-9][0-5][0-9][0-5][0-9].*"}peach sdv,cancast["T"]peach sdv
-info:update t:"Z",rule:190,maybe:0b from info where t="n",mw within 11 24,mdot<4,cancast["Z"]peach sdv
-info:update t:"P",rule:200,maybe:1b from info where t="n",mw within 12 29,mdot<4,{all x like"[12]*"}peach sdv,cancast["P"]peach sdv
-info:update t:"N",rule:210,maybe:1b from info where t="n",mw within 3 28,mdot=1,cancast["N"]peach sdv
-info:update t:"?",rule:220,maybe:0b from info where t="n" / reset remaining maybe numeric
-info:update t:"C",rule:230,maybe:0b from info where t="?",mw=1 / char
-info:update t:"B",rule:240,maybe:0b from info where t in"HC",mw=1,mdot=0,{$[all x in"01tTfFyYnN";(any"0fFnN"in x)and any"1tTyY"in x;0b]}each dchar / boolean
-info:update t:"B",rule:250,maybe:1b from info where t in"HC",mw=1,mdot=0,{all x in"01tTfFyYnN"}each dchar / boolean
-info:update t:"X",rule:260,maybe:0b from info where t="?",mw=2,{$[all x in"0123456789abcdefABCDEF";(any .Q.n in x)and any"abcdefABCDEF"in x;0b]}each dchar /hex
-info:update t:"S",rule:270,maybe:1b from info where t="?",mw<SYMMAXWIDTH,mw>1,gr<SYMMAXGR / symbols (max width permitting)
-info:update t:"*",rule:280,maybe:0b from info where t="?" / the rest as strings
+info:update t:"n",(rules:rules,'40)from info where t="?",{any x in"0123456789"}each dchar / vaguely numeric..
+info:update t:"I",(rules:rules,'50),ipa:1b from info where t="n",mw within 7 15,mdot=3,{all x in".0123456789"}each dchar,cancast["I"]peach sdv / ip-address
+if[.z.K>=3;info:update t:"G",(rules:rules,'55) from info where t="*",mw=36,mdot=0,{all x like"*-????-????-????-*"}peach sdv,cancast["G"]peach sdv] / GUID, v3.0 or later
+info:update t:"J",(rules:rules,'60)from info where t="n",mdot=0,{all x in"+-0123456789"}each dchar,cancast["J"]peach sdv
+info:update t:"I",(rules:rules,'70)from info where t="J",mw<12,cancast["I"]peach sdv
+info:update t:"H",(rules:rules,'80)from info where t="I",mw<7,cancast["H"]peach sdv
+info:update t:"F",(rules:rules,'90)from info where t="n",mdot<2,mw>1,cancast["F"]peach sdv
+info:update t:"E",(rules:rules,'100),maybe:1b from info where t="F",mw<9
+info:update t:"M",(rules:rules,'110),maybe:1b from info where t in"nIHEF",mdot<2,mw within 4 7,cancast["M"]peach sdv 
+info:update t:"D",(rules:rules,'120),maybe:1b from info where t in"nI",mdot in 0 2,mw within 6 11,cancast["D"]peach sdv 
+info:update t:"V",(rules:rules,'130),maybe:1b from info where t="I",mw in 5 6,7<count each dchar,{all x like"*[0-9][0-5][0-9][0-5][0-9]"}peach sdv,cancast["V"]peach sdv / 235959 12345        
+info:update t:"U",(rules:rules,'140),maybe:1b from info where t="H",mw in 3 4,7<count each dchar,{all x like"*[0-9][0-5][0-9]"}peach sdv,cancast["U"]peach sdv /2359
+info:update t:"U",(rules:rules,'150),maybe:0b from info where t="n",mw in 4 5,mdot=0,{all x like"*[0-9]:[0-5][0-9]"}peach sdv,cancast["U"]peach sdv
+info:update t:"T",(rules:rules,'160),maybe:0b from info where t="n",mw within 7 12,mdot<2,{all x like"*[0-9]:[0-5][0-9]:[0-5][0-9]*"}peach sdv,cancast["T"]peach sdv
+info:update t:"V",(rules:rules,'170),maybe:0b from info where t="T",mw in 7 8,mdot=0,cancast["V"]peach sdv
+info:update t:"T",(rules:rules,'180),maybe:1b from info where t in"EF",mw within 7 10,mdot=1,{all x like"*[0-9][0-5][0-9][0-5][0-9].*"}peach sdv,cancast["T"]peach sdv
+info:update t:"Z",(rules:rules,'190),maybe:0b from info where t="n",mw within 11 24,mdot<4,cancast["Z"]peach sdv
+info:update t:"P",(rules:rules,'200),maybe:1b from info where t="n",mw within 12 29,mdot<4,{all x like"[12]*"}peach sdv,cancast["P"]peach sdv
+info:update t:"N",(rules:rules,'210),maybe:1b from info where t="n",mw within 3 28,mdot=1,cancast["N"]peach sdv
+info:update t:"?",(rules:rules,'220),maybe:0b from info where t="n" / reset remaining maybe numeric
+info:update t:"C",(rules:rules,'230),maybe:0b from info where t="?",mw=1 / char
+info:update t:"B",(rules:rules,'240),maybe:0b from info where t in"HC",mw=1,mdot=0,{$[all x in"01tTfFyYnN";(any"0fFnN"in x)and any"1tTyY"in x;0b]}each dchar / boolean
+info:update t:"B",(rules:rules,'250),maybe:1b from info where t in"HC",mw=1,mdot=0,{all x in"01tTfFyYnN"}each dchar / boolean
+info:update t:"X",(rules:rules,'260),maybe:0b from info where t="?",mw=2,{$[all x in"0123456789abcdefABCDEF";(any .Q.n in x)and any"abcdefABCDEF"in x;0b]}each dchar /hex
+info:update t:"S",(rules:rules,'270),maybe:1b from info where t="?",mw<SYMMAXWIDTH,mw>1,gr<SYMMAXGR / symbols (max width permitting)
+info:update t:"*",(rules:rules,'280),maybe:0b from info where t="?" / the rest as strings
 / flag those S/* columns which could be encoded to integers (.Q.j10/x10/j12/x12) to avoid symbols
 info:update j12:1b from info where t in"S*",mw<13,{all x in .Q.nA}each dchar
 info:update j10:1b from info where t in"S*",mw<11,{all x in .Q.b6}each dchar 
 if["?"in exec t from info;'`unknown.field]; / check all done
 
-info:select c,ci,t,maybe,empty,res,j10,j12,ipa,mw,mdot,rule,gr,ndv,dchar from info
+info:select c,ci,t,maybe,empty,res,j10,j12,ipa,mw,mdot,rules,gr,ndv,dchar from info
 / make changes to <info>, test with: LOAD10 LOADFILE, or sba[]
 / update t:" " from`info where not t="S" / only load symbols
 / update t:"*" from`info where t="S" / load all char as strings, no need to enumerate before save
