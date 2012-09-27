@@ -1,5 +1,6 @@
 / guess a reasonable loadstring for a csv file (kdb+ 2.4 or greater)
-"kdb+csvguess 0.44 2012.07.10"
+"kdb+csvguess 0.45 2012.09.27"
+/ 2012.09.27 add -compress 
 / 2012.07.10 add GUID, track ALL checks per col
 / 2009.09.19 cleanup tests
 / 2009.09.15 add conservative checks for N&P (2.6) 
@@ -11,7 +12,8 @@
 / 2007.07.24 allow hhmmss.mmm <-> T
 / 2007.07.13 POSTLOADALL
 
-o:.Q.opt .z.x;if[1>count .Q.x;-2"usage: q ",(string .z.f)," CSVFILE [-noheader|nh] [-discardempty|de] [-semicolon|sc] [-tab|tb] [-zaphdrs|zh] [-savescript|ss] [-saveinfo|si] [-zeuro|z1] [-exit]\n";exit 1]
+o:.Q.opt .z.x;if[1>count .Q.x;-2"usage: q ",(string .z.f)," CSVFILE [-compress|co] [-noheader|nh] [-discardempty|de] [-semicolon|sc] [-tab|tb] [-zaphdrs|zh] [-savescript|ss] [-saveinfo|si] [-zeuro|z1] [-exit]\n";exit 1]
+/ -compress|co - compress low granularity (info.gr) columns with COMPRESSZD default (17;2;6)
 / -noheader|nh - the csv file doesn't have headers, so create some (c00..)
 / -discardempty|de - if a column is empty don't bother to load it 
 / -semicolon|sc - use semicolon as delimiter in place of the default comma
@@ -27,6 +29,7 @@ o:.Q.opt .z.x;if[1>count .Q.x;-2"usage: q ",(string .z.f)," CSVFILE [-noheader|n
 if[(any`semicolon`sc in key o)&any`tab`tb in key o;-2"delimiter: -tab OR -semicolon (default \",\")";exit 1]
 
 FILE:LOADFILE:hsym`${x[where"\\"=x]:"/";x}first .Q.x
+COMPRESS:any`compress`co in key o
 NOHEADER:any`noheader`nh in key o
 DISCARDEMPTY:any`discardempty`de in key o
 DELIM:$[any`semicolon`sc in key o;";";any`tab`tb in key o;"\t";","]
@@ -42,6 +45,7 @@ WIDTHHDR:25000 / initial width read to look for header record
 READLINES:5555 / approximate number of records to check
 FORCECHARWIDTH:30 / width beyond which we just set a column to be text and finished 
 CHUNKSIZE:4194000 / chunksize read when bulk load/save - much larger than safe default in .Q.fs 
+COMPRESSZD:(17;2;6)
 SAVEDB:`:csvdb / database top level, where things like `:sym live
 SAVEPTN:` / individual partition, 2006.12.25 frinstance; ` => none
 PRESAVEEACH:{x} / function to be run before each incremental save (delete date field?) 
@@ -149,6 +153,8 @@ LOAD10:{[file] LOAD(file;0;1+last(11-NOHEADER)#where 0xa=read1(file;0;20000))}
 BULKLOAD:{[file] fs2[{`DATA insert POSTLOADEACH$[NOHEADER or count DATA;flip LOADHDRS!(LOADFMTS;DELIM)0:x;LOADHDRS xcol LOADDEFN[]0: x]}file];count DATA::POSTLOADALL DATA}
 BULKSAVE:{[file] .tmp.bsc:0;fs2[{.[SAVEPATH[];();,;]PRESAVEEACH t:.Q.en[`. `SAVEDB]POSTLOADEACH$[NOHEADER or .tmp.bsc;flip LOADHDRS!(LOADFMTS;DELIM)0:x;LOADHDRS xcol LOADDEFN[]0: x];.tmp.bsc+:count t}]file;POSTSAVEALL SAVEPATH[];.tmp.bsc}
 JUSTSYM:{[file] .tmp.jsc:0;fs2[{.tmp.jsc+:count .Q.en[`. `SAVEDB]POSTLOADEACH$[NOHEADER or .tmp.jsc;flip JUSTSYMHDRS!(JUSTSYMFMTS;DELIM)0:x;JUSTSYMHDRS xcol JUSTSYMDEFN[]0: x]}]file;.tmp.jsc}
+/ if[COMPRESS;.z.zd:exec c!(count c)#enlist COMPRESSZD from info where gr<40]
+if[COMPRESS;.z.zd:COMPRESSZD]
 
 / create a standalone load script - savescript[]
 / call it with:
@@ -166,7 +172,7 @@ JUSTSYM:{[file] .tmp.jsc:0;fs2[{.tmp.jsc+:count .Q.en[`. `SAVEDB]POSTLOADEACH$[N
 / q xxx.q .. -chunksize NN / non-default read chunksize - default is 25 
 savescript:{f:`$":",(string LOADNAME),".load.q";f 1:"";hs:neg hopen f;
 	hs"/ ",(string .z.z)," ",(string .z.h)," ",(string .z.u);
-	hs"/ q ",(string LOADNAME),".load.q FILE [-bl|bulkload] [-bs|bulksave] [-js|justsym] [-exit] [-savedb SAVEDB] [-saveptn SAVEPTN] [-savename SAVENAME] [-chunksize NNN (in MB)] ";
+	hs"/ q ",(string LOADNAME),".load.q FILE [-bl|bulkload] [-bs|bulksave] [-co|compress] [-js|justsym] [-exit] [-savedb SAVEDB] [-saveptn SAVEPTN] [-savename SAVENAME] [-chunksize NNN (in MB)] ";
 	hs"/ q ",(string LOADNAME),".load.q FILE";
 	hs"/ q ",(string LOADNAME),".load.q";
 	hs"/ q ",(string LOADNAME),".load.q -chunksize 11 / test to find optimum for your file";
@@ -188,6 +194,7 @@ savescript:{f:`$":",(string LOADNAME),".load.q";f 1:"";hs:neg hopen f;
 	hs"JUSTSYMFMTS:\"",JUSTSYMFMTS,"\"";hs"JUSTSYMHDRS:",$[0=count JUSTSYMHDRS;"0#`";raze"`",'string JUSTSYMHDRS];hs"JUSTSYMDEFN:",-3!JUSTSYMDEFN;
 	hs"CHUNKSIZE:",string CHUNKSIZE;hs"DATA:()";
 	hs"if[`chunksize in key o;if[count first o[`chunksize];CHUNKSIZE:floor 1e6*1|\"I\"$first o[`chunksize]]]";
+	hs"COMPRESS:any`co`compress in key o";hs"COMPRESSZD:",-3!COMPRESSZD;hs"if[COMPRESS;.z.zd:COMPRESSZD]";
 	hs"k)fs2:",2_ last value fs2;
 	hs"disksort:",-3!disksort;
 	hs"BULKLOAD:",-3!BULKLOAD;hs"SAVE:",-3!SAVE;hs"BULKSAVE:",-3!BULKSAVE;hs"JUSTSYM:",-3!JUSTSYM;
