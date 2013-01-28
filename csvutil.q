@@ -6,7 +6,7 @@
 / info:.csv.info[file] - return a table of information about the file
 / columns are: 
 /	c - column name; ci - column index; t - load type; mw - max width; 
-/	dchar - distinct characters in values; rule - rule that caught the type
+/	dchar - distinct characters in values; rules - rules that caught the type
 /	maybe - needs checking, _could_ be say a date, but perhaps just a float?
 / .csv.info0[file;onlycols] - like .csv.info except that it only analyses <onlycols>
 / example:
