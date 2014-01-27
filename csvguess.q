@@ -106,8 +106,8 @@ info:update t:"U",(rules:rules,'150),maybe:0b from info where t="n",mw in 4 5,md
 info:update t:"T",(rules:rules,'160),maybe:0b from info where t="n",mw within 7 12,mdot<2,{all x like"*[0-9]:[0-5][0-9]:[0-5][0-9]*"}peach sdv,cancast["T"]peach sdv
 info:update t:"V",(rules:rules,'170),maybe:0b from info where t="T",mw in 7 8,mdot=0,cancast["V"]peach sdv
 info:update t:"T",(rules:rules,'180),maybe:1b from info where t in"EF",mw within 7 10,mdot=1,{all x like"*[0-9][0-5][0-9][0-5][0-9].*"}peach sdv,cancast["T"]peach sdv
-info:update t:"Z",(rules:rules,'190),maybe:0b from info where t="n",mw within 11 24,mdot<4,cancast["Z"]peach sdv
-info:update t:"P",(rules:rules,'200),maybe:1b from info where t="n",mw within 12 29,mdot<4,{all x like"[12]*"}peach sdv,cancast["P"]peach sdv
+/ info:update t:"Z",(rules:rules,'190),maybe:0b from info where t="n",mw within 11 24,mdot<4,cancast["Z"]peach sdv
+info:update t:"P",(rules:rules,'200),maybe:1b from info where t="n",mw within 11 29,mdot<4,{all x like"[12][0-9][0-9][0-9][./-][01][0-9][./-][0-3][0-9]*"}peach sdv,cancast["P"]peach sdv
 info:update t:"N",(rules:rules,'210),maybe:1b from info where t="n",mw within 3 28,mdot=1,cancast["N"]peach sdv
 info:update t:"?",(rules:rules,'220),maybe:0b from info where t="n" / reset remaining maybe numeric
 info:update t:"C",(rules:rules,'230),maybe:0b from info where t="?",mw=1 / char
