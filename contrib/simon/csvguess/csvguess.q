@@ -87,7 +87,7 @@ info:update gr:floor 0.5+100*ndv%nas,mw:{max count each x}peach sdv from info wh
 / rule 10 only in csvutil.q 
 info:update t:"*",(rules:rules,'20)from info where mw>FORCECHARWIDTH / long values
 info:update t:"C "[DISCARDEMPTY],(rules:rules,'30),empty:1b from info where t="?",mw=0 / empty columns
-info:update dchar:{distinct raze x}peach sdv from info where t="?"
+info:update dchar:{asc distinct raze x}peach sdv from info where t="?"
 info:update mdot:{max sum each"."=x}peach sdv from info where t="?",{"."in x}each dchar
 info:update t:"n",(rules:rules,'40)from info where t="?",{any x in"0123456789"}each dchar / vaguely numeric..
 info:update t:"I",(rules:rules,'50),ipa:1b from info where t="n",mw within 7 15,mdot=3,{all x in".0123456789"}each dchar,cancast["I"]peach sdv / ip-address
