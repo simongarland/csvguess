@@ -1,4 +1,5 @@
 / utilities to quickly load a csv file - for more exhaustive analysis of the csv contents see csvguess.q
+/ 2014.01.27 - favour type P rather than Z
 / 2013.05.25 - tighten up U+V 
 / 2012.07.11 - add GUID 
 / 2009.09.20 - updated to match latest csvguess.q 

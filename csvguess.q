@@ -1,5 +1,6 @@
 / guess a reasonable loadstring for a csv file (kdb+ 2.4 or greater)
-"kdb+csvguess 0.46 2013.05.25"
+"kdb+csvguess 0.47 2014.01.27"
+/ 2014.01.27 favour type P rather than Z
 / 2013.05.25 tighten up U+V 
 / 2012.09.27 add -compress 
 / 2012.07.10 add GUID, track ALL checks per col
