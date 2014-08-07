@@ -1,4 +1,5 @@
 / utilities to quickly load a csv file - for more exhaustive analysis of the csv contents see csvguess.q
+/ 2014.08.07 - use .Q.id for colhdrs
 / 2014.01.27 - favour type P rather than Z
 / 2013.05.25 - tighten up U+V 
 / 2012.07.11 - add GUID 
@@ -41,13 +42,13 @@ read:{[file]data[file;info[file]]}
 read10:{[file]data10[file;info[file]]}  
 
 colhdrs:{[file]
-  `$nameltrim DELIM vs cleanhdrs first read0(file;0;1+first where 0xa=read1(file;0;WIDTHHDR))}
+  {cols .Q.id flip x!(count x)#()}`$DELIM vs cleanhdrs first read0(file;0;1+first where 0xa=read1(file;0;WIDTHHDR))}
 data:{[file;info]
   (exec c from info where not t=" ")xcol(exec t from info;enlist DELIM)0:file}
 data10:{[file;info]
   data[;info](file;0;1+last 11#where 0xa=read1(file;0;15*WIDTHHDR))}
 info0:{[file;onlycols]
-  colhdrs:`$nameltrim DELIM vs cleanhdrs first head:read0(file;0;1+last where 0xa=read1(file;0;WIDTHHDR));
+  colhdrs:{cols .Q.id flip x!(count x)#()}`$DELIM vs cleanhdrs first head:read0(file;0;1+last where 0xa=read1(file;0;WIDTHHDR));
   loadfmts:(count colhdrs)#"S";if[count onlycols;loadfmts[where not colhdrs in onlycols]:"C"];
   breaks:where 0xa=read1(file;0;floor(10+READLINES)*WIDTHHDR%count head);
   nas:count as:colhdrs xcol(loadfmts;enlist DELIM)0:(file;0;1+last((1+READLINES)&count breaks)#breaks);
