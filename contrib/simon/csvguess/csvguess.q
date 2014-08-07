@@ -1,5 +1,6 @@
 / guess a reasonable loadstring for a csv file (kdb+ 2.4 or greater)
-"kdb+csvguess 0.47 2014.01.27"
+"kdb+csvguess 0.48 2014.08.07"
+/ 2014.08.07 use .Q.id for colhdrs 
 / 2014.01.27 favour type P rather than Z
 / 2013.05.25 tighten up U+V 
 / 2012.09.27 add -compress 
@@ -72,9 +73,9 @@ k)nameltrim:{$[~@x;.z.s'x;~(*x)in aA:.Q.a,.Q.A;(+/&\~x in aA)_x;x]}
 
 info:([]c:key flip as;v:value flip as);as:()
 if[NOHEADER;info:update c:{`$"c",string 1000+x}each i from info]
-zh0:{$[(count distinct r)=count r:`$"}"vs 1_x[where(x:raze"}",'nameltrim string x)in"}",.Q.an];r;'`hdrs.not.distinct]} / remove junk chars, leading underscores and spaces, preserve case 
+zh0:{cols .Q.id flip x!(count x)#()}
 info:update c:zh0 c from info
-zh1:{$[(count distinct r)=count r:`$"}"vs 1_x[where(x:raze"}",'string lower x)in"}",.Q.an except"_"];r;'`zaphdrs.not.distinct]} / lowercase and remove underscores
+zh1:{cols .Q.id flip(`${x except'"_"}string lower x)!(count x)#()}
 if[ZAPHDRS;info:update c:zh1 c from info]
 / check for reserved words used as colnames
 reserved:key`.q;reserved,:.Q.res;reserved,:`i
