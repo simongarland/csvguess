@@ -1,4 +1,5 @@
 / utilities to quickly load a csv file - for more exhaustive analysis of the csv contents see csvguess.q
+/ 2016.09.03 - allow HHMMSSXYZXYZXYZ N timestamps 
 / 2014.08.07 - use .Q.id for colhdrs
 / 2014.01.27 - favour type P rather than Z
 / 2013.05.25 - tighten up U+V 
@@ -70,6 +71,7 @@ info0:{[file;onlycols]
   info:update t:"I",(rules:rules,'50),ipa:1b from info where t="n",mw within 7 15,mdot=3,{all x in".0123456789"}each dchar,.csv.cancast["I"]peach sdv; / ip-address
   info:update t:"F",(rules:rules,'51)from info where t="n",mw>2,mdot<2,{all" /"in x}each dchar,.csv.cancast["F"]peach sdv; / fractions, "1 3/4" -> 1.75f
   if[.z.K>=3;info:update t:"G",(rules:rules,'52) from info where t="*",mw=36,mdot=0,{all x like"*-????-????-????-*"}peach sdv,.csv.cancast["G"]peach sdv]; / GUID, v3.0 or later
+  info:update t:"N",(rules:rules,'53),maybe:1b from info where t="n",mw=15,mdot=0,{all x in"0123456789"}each dchar,cancast["N"]peach sdv; / N, could be T but that'd loose precision
   info:update t:"J",(rules:rules,'60)from info where t="n",mdot=0,{all x in"+-0123456789"}each dchar,.csv.cancast["J"]peach sdv;
   info:update t:"I",(rules:rules,'70)from info where t="J",mw<12,.csv.cancast["I"]peach sdv;
   info:update t:"H",(rules:rules,'80)from info where t="I",mw<7,.csv.cancast["H"]peach sdv;
