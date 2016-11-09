@@ -1,5 +1,6 @@
 / guess a reasonable loadstring for a csv file (kdb+ 2.4 or greater)
-"kdb+csvguess 0.49 2016.09.03"
+"kdb+csvguess 0.50 2016.11.09"
+/ 2016.11.09 add " " as valid delimiter in P
 / 2016.09.03 allow HHMMSSXYZXYZXYZ N and HHMMSSXYZ T timestamps
 / 2014.08.07 use .Q.id for colhdrs
 / 2014.01.27 favour type P rather than Z

@@ -1,4 +1,5 @@
 / utilities to quickly load a csv file - for more exhaustive analysis of the csv contents see csvguess.q
+/ 2016.11.09 add " " as valid delimiter in P
 / 2016.09.03 - allow HHMMSSXYZXYZXYZ N timestamps
 / 2014.08.07 - use .Q.id for colhdrs
 / 2014.01.27 - favour type P rather than Z
