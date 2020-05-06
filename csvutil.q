@@ -1,5 +1,6 @@
 / utilities to quickly load a csv file - for more exhaustive analysis of the csv contents see csvguess.q
-/ 2016.11.09 add " " as valid delimiter in P
+/ 2020.05.06 - bugfix for infolike and info0 
+/ 2016.11.09 - add " " as valid delimiter in P
 / 2016.09.03 - allow HHMMSSXYZXYZXYZ N timestamps
 / 2014.08.07 - use .Q.id for colhdrs
 / 2014.01.27 - favour type P rather than Z
@@ -61,7 +62,10 @@ info0:{[file;onlycols]
   info:update ci:`s#ci from info;
   info:update rules:(count info)#() from info;
   if[count onlycols;info:update t:" ",(rules:rules,'10)from info where not c in onlycols];
-  info:update sdv:{string(distinct x)except`}peach v from info;
+  / info:update sdv:{string(distinct x)except`}peach v from info;
+  info:$[count onlycols;
+         update sdv:{string(distinct x)except`}peach v from info where c in onlycols;
+         update sdv:{string(distinct x)except`}peach v from info];
   info:update ndv:count each sdv from info;
   info:update gr:floor 0.5+100*ndv%nas,mw:{max count each x}peach sdv from info where 0<ndv;
   info:update t:"*",(rules:rules,'20)from info where mw>.csv.FORCECHARWIDTH; / long values
@@ -104,7 +108,7 @@ info0:{[file;onlycols]
   info:update j10:1b from info where t in"S*",mw<11,{all x in .Q.b6}each dchar;
   select c,ci,t,maybe,empty,res,j10,j12,ipa,mw,mdot,rules,gr,ndv,dchar from info}
 info:info0[;()] / by default don't restrict columns
-infolike:{[file;pattern] info0[file;{x where x like y}[lower colhdrs[file];pattern]]} / .csv.infolike[file;"*time"]
+infolike:{[file;pattern] info0[file;{x where(lower x)like lower y}[colhdrs[file];pattern]]} / .csv.infolike[file;"*time"]
 
 \d .
 / DATA:()
