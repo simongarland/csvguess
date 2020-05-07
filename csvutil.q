@@ -109,6 +109,7 @@ info0:{[file;onlycols]
   select c,ci,t,maybe,empty,res,j10,j12,ipa,mw,mdot,rules,gr,ndv,dchar from info}
 info:info0[;()] / by default don't restrict columns
 infolike:{[file;pattern] info0[file;{x where(lower x)like lower y}[colhdrs[file];pattern]]} / .csv.infolike[file;"*time"]
+infoonly:info0 / only some columns .csv.infoonly[file;`this`and`that] 
 
 \d .
 / DATA:()

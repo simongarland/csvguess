@@ -1,7 +1,6 @@
 # csvguess
-utilities for loading CSVs
 
-guess CSV loadstrings by inspecting the data, and after tweaking the column definitions. Generate a loader script (csvguess.q) or simply load the data (csvutil.q) 
+two scripts for loading CSVs by guessing CSV loadstrings after inspecting the data. After tweaking the column definitions you can generate a loader script (csvguess.q) or simply manipulate the guessed types and load the data (csvutil.q) 
 
 see: https://code.kx.com/q/ref/file-text/ for the vanilla CSV loading primitives.
 
@@ -11,22 +10,26 @@ a collection of utilities to load CSVs
 
 .csv.colhdrs[file] - return a list of colhdrs from file
 
- info:.csv.info[file] - return a table of information about the file
- columns are:
+ .csv.info[file] - return a table of information about the file
+ columns include:
  
 	- c - column name
 	- ci - column index 
-	- t - load type; mw - max width
+	- t - load type
+	- mw - max width
 	- dchar - distinct characters in values
 	- rules - rules that caught the type
-	- maybe - needs checking, _could_ be say a date, but perhaps just a float?
+	- gr - granularity - a measure of the number of different values. A granularity of 0 means it’s all just one value, 100 means every value is different. A hight granularity is an indicator that the column will compress well, and that it could be stored as an enumeration rather than strings.
+	- maybe - assigned type needs checking, 1812 for example _could_ be a date, or a time of day, or a short, or an int, or a long, a float or perhaps a symbol for the title of a loud lump of music.
 
- .csv.info0[file;onlycols] - like .csv.info except that it only analyses <onlycols>
+.csv.infoonly[file;onlycols] - like .csv.info except that it only analyses <onlycols>
+
+.csv.infolike[file;pattern] - like .csv.info except that it only analyses columns with a name matching pattern (case independent) 
 
  example:
  
 ```	
-	info:.csv.info0[file;(.csv.colhdrs file)like"*price"]
+	info:.csv.infoonly[file;`buy`sell`size]
 
 	info:.csv.infolike[file;"*price"]
 	
