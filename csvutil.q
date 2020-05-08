@@ -14,9 +14,9 @@
 /	c - column name; ci - column index; t - load type; mw - max width;
 /	dchar - distinct characters in values; rules - rules that caught the type
 /	maybe - needs checking, _could_ be say a date, but perhaps just a float?
-/ .csv.info0[file;onlycols] - like .csv.info except that it only analyses <onlycols>
+/ .csv.infoonly[file;onlycols] - like .csv.info except that it only analyses <onlycols>
 / example:
-/	info:.csv.info0[file;(.csv.colhdrs file)like"*price"]
+/	info:.csv.infoonly[file;`col0`col1`col3]
 /	info:.csv.infolike[file;"*price"]
 /	show delete from info where t=" "
 / .csv.data[file;info] - use the info from .csv.info to read the data
