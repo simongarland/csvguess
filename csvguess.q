@@ -111,8 +111,8 @@ info:update t:"F",(rules:rules,'90)from info where t="n",mdot<2,mw>1,cancast["F"
 info:update t:"E",(rules:rules,'100),maybe:1b from info where t="F",mw<9
 info:update t:"M",(rules:rules,'110),maybe:1b from info where EXTENDED,t in"nIHEF",mdot<2,mw within 4 7,cancast["M"]peach sdv
 info:update t:"D",(rules:rules,'120),maybe:1b from info where EXTENDED,t="I",mw in 6 8,cancast["D"]peach sdv
-info:update t:"D",(rules:rules,'121),maybe:0b from info where EXTENDED,t="n",mdot=0,mw within 8 10,cancast["D"]peach sdv
-info:update t:"D",(rules:rules,'122),maybe:0b from info where EXTENDED,t="n",mdot=2,mw within 8 10,cancast["D"]peach sdv
+info:update t:"D",(rules:rules,'121),maybe:0b from info where t="n",mdot=0,mw within 8 10,cancast["D"]peach sdv
+info:update t:"D",(rules:rules,'122),maybe:0b from info where t="n",mdot=2,mw within 8 10,cancast["D"]peach sdv
 info:update t:"V",(rules:rules,'130),maybe:1b from info where EXTENDED,t="I",mw=6,{all x like"[012][0-9][0-5][0-9][0-5][0-9]"}peach sdv,nostar["V"]peach sdv / 235959 123456
 info:update t:"U",(rules:rules,'140),maybe:1b from info where EXTENDED,t="H",mw=4,{all x like"[012][0-9][0-5][0-9]"}peach sdv,nostar["U"]peach sdv /2359
 info:update t:"U",(rules:rules,'150),maybe:0b from info where t="n",mw in 4 5,mdot=0,{all x like"*[0-9]:[0-5][0-9]"}peach sdv,cancast["U"]peach sdv
