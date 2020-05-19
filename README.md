@@ -47,11 +47,12 @@ show delete from info where t=" "
 a standalone script to generate a csv loader for a particular schema. 
 
 ```
-usage: q csvguess.q CSVFILE [-compress|co] [-noheader|nh] [-discardempty|de] [-semicolon|sc] [-tab|tb] [-zaphdrs|zh] [-savescript|ss] [-saveinfo|si] [-zeuro|z1] [-exit]
+usage: q csvguess.q CSVFILE [-basic] [-compress|co] [-noheader|nh] [-discardempty|de] [-semicolon|sc] [-tab|tb] [-zaphdrs|zh] [-savescript|ss] [-saveinfo|si] [-zeuro|z1] [-exit]
 ```
 
 Command line options:
  
+* -basic - load basic types only, treats 20200519 as an integer not a date for example
 * -compress|co - compress low granularity (info.gr) columns with COMPRESSZD default (17;2;6)
 * -noheader|nh - the csv file doesn't have headers, so create some (c00..)
 * -discardempty|de - if a column is empty don't bother to load it
